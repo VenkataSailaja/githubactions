@@ -11,25 +11,30 @@
 
 
  jobs:
-   terraform-plan:
-    - name: Upload Plan
+  terraform-plan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+
+      - name: Upload Plan
         uses: actions/upload-artifact@v4
         with:
           name: tfplan
           path: tfplan
-    - name: Terraform Plan
-        run: terraform plan -out=tfplan
-   terraform-apply:
-     needs: terraform-plan
-     runs-on: ubuntu-latest
-     environment: dev
+
+  terraform-apply:
+    needs: terraform-plan
+    runs-on: ubuntu-latest
+    environment: dev
+
+    steps:
 
      # env:
      #   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
      #   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
      #   AWS_DEFAULT_REGION: us-east-1 # change if needed
-
-     steps:
        - name: Checkout
          uses: actions/checkout@v4
 
