@@ -1,46 +1,54 @@
- name: Terraform Deploy
+name: Terraform Deploy
 
- on:
-   # push:
-   #   branches: [ main ]
-   workflow_dispatch:   # ✅ Manual trigger only
+on:
+  workflow_dispatch:
 
- permissions:
+permissions:
   id-token: write
   contents: read
 
-
- jobs:
+jobs:
   terraform:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-     # env:
-     #   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-     #   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-     #   AWS_DEFAULT_REGION: us-east-1 # change if needed
-       - name: Checkout
-         uses: actions/checkout@v4
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
 
-       - name: Setup Terraform
-         uses: hashicorp/setup-terraform@v3
-
-       - name: Configure AWS Credentials
-         uses: aws-actions/configure-aws-credentials@v4
-         with:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-1
 
-       - name: Terraform Init
-         run: terraform init
+      - name: Terraform Init
+        run: terraform init
 
-       - name: Terraform Validate
-         run: terraform validate
+      - name: Terraform Validate
+        run: terraform validate
 
   terraform-plan:
+    needs: terraform
     runs-on: ubuntu-latest
+
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Terraform Init
+        run: terraform init
 
       - name: Terraform Plan
         run: terraform plan -out=tfplan
@@ -51,25 +59,32 @@
           name: tfplan
           path: tfplan
 
-      - name: Terraform Plan
-        run: terraform plan -out=tfplan
-
-      - name: Upload Plan
-        uses: actions/upload-artifact@v4
-        with:
-          name: tfplan
-          path: tfplan
-  
   terraform-apply:
     needs: terraform-plan
     runs-on: ubuntu-latest
-    environment: dev   
+    environment: dev
+
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Terraform Init
+        run: terraform init
+
       - name: Download Plan
         uses: actions/download-artifact@v4
         with:
           name: tfplan
+          path: .
 
       - name: Terraform Apply
         run: terraform apply tfplan
-      
